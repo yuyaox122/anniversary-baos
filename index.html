@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="assets/favicon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Parisienne&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Birthstone&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&display=swap">
 
 <style>
   :root {
@@ -30,8 +30,8 @@
     --rose:   #B8324E;
     --tape:   rgba(255,255,255,0.5);
 
-    --script: 'Parisienne', 'Snell Roundhand', 'Apple Chancery', cursive;
-    --serif:  'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+    --script: 'Birthstone', 'Snell Roundhand', 'Apple Chancery', cursive;
+    --serif:  'Bodoni Moda', Didot, 'Playfair Display', Georgia, serif;
   }
 
   * { box-sizing: border-box; }
@@ -94,8 +94,8 @@
   h1 {
     margin: 0;
     font-weight: 400;
-    font-size: clamp(46px, 12vw, 66px);
-    line-height: 1.08;
+    font-size: clamp(54px, 14vw, 78px);
+    line-height: 1.02;
     max-width: 10ch;
   }
   h1 .today { color: var(--rose); }
@@ -167,23 +167,27 @@
 
   .aside {
     display: inline-block;
-    margin-left: 16px;
-    font-size: 24px;
+    margin-left: 18px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 21px;
+    letter-spacing: 0.01em;
     color: var(--rose);
     transform: rotate(-4deg);
     white-space: nowrap;
   }
 
   .tally {
-    margin: 10px 0 0;
-    font-size: 27px;
+    margin: 12px 0 0;
+    font-size: 32px;
     line-height: 1.45;
   }
 
   footer {
     display: block;
     margin-top: 30px;
-    font-size: 34px;
+    font-size: 42px;
     line-height: 1.3;
     color: var(--rose);
     transform: rotate(-1.5deg);
@@ -315,7 +319,7 @@ setInterval(tick, 1000);
   }
 
   const ctx = canvas.getContext("2d");
-  const LANES = 24;                 /* one falling heart per lane, so the spread stays even */
+  const LANES = 46;                 /* one falling heart per lane, so the spread stays even */
   let w = 0, h = 0, rain = [], burstHearts = [];
 
   const TINTS = ["rgba(168,38,66,", "rgba(198,72,102,", "rgba(226,116,142,"];
@@ -385,25 +389,43 @@ setInterval(tick, 1000);
     else if (prev) for (const p of rain) p.x *= w / prev;   /* keep the spread on resize */
   }
 
-  function burst(cx, cy, n) {
+  /* fired outwards from a point, then pulled down and faded out */
+  function explode(cx, cy, n) {
     for (let i = 0; i < n; i++) {
-      const p = reset({}, 0, cy + (Math.random() - 0.5) * 40);
-      p.x = cx + (Math.random() - 0.5) * 44;
-      p.vy = 0.6 + Math.random() * 1.2;
-      p.alpha = 0.6 + Math.random() * 0.34;
+      const p = reset({}, 0, cy);
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.4 + Math.random() * 6.6;
+      p.x = cx;
+      p.y = cy;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed;
+      p.spin = Math.random() * Math.PI * 2;
+      p.spinRate = (Math.random() - 0.5) * 0.26;
+      p.size = 11 + Math.random() * 15;
+      p.alpha = 0.72 + Math.random() * 0.28;
+      p.exploding = true;
       burstHearts.push(p);
     }
   }
 
   function move(p) {
-    p.y += p.vy;
-    p.phase += 0.016;
-    p.x += Math.sin(p.phase) * p.drift;
+    if (p.exploding) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.17;          /* gravity */
+      p.vx *= 0.992;         /* air */
+      p.spin += p.spinRate;
+      p.alpha -= 0.0055;
+    } else {
+      p.y += p.vy;
+      p.phase += 0.016;
+      p.x += Math.sin(p.phase) * p.drift;
+    }
 
     ctx.save();
     ctx.translate(p.x, p.y);
-    ctx.rotate(Math.sin(p.phase) * p.sway);   /* a gentle tilt, never a tumble */
-    ctx.fillStyle = p.tint + p.alpha + ")";
+    ctx.rotate(p.exploding ? p.spin : Math.sin(p.phase) * p.sway);
+    ctx.fillStyle = p.tint + Math.max(p.alpha, 0) + ")";
     heartPath(p.size);
     ctx.fill();
     ctx.restore();
@@ -416,7 +438,7 @@ setInterval(tick, 1000);
       if (p.y - p.size > h) reset(p, p.lane, -p.size - Math.random() * 60);
     }
     for (const p of burstHearts) move(p);
-    burstHearts = burstHearts.filter(p => p.y - p.size < h);
+    burstHearts = burstHearts.filter(p => p.alpha > 0.02 && p.y - p.size < h);
     requestAnimationFrame(draw);
   }
 
@@ -426,11 +448,11 @@ setInterval(tick, 1000);
 
   document.getElementById("roseBtn").addEventListener("click", e => {
     const b = e.currentTarget.getBoundingClientRect();
-    burst(b.left + b.width / 2, b.top + b.height / 2, 26);
+    explode(b.left + b.width / 2, b.top + b.height / 2, 60);
   });
 
   if (new Date().getDate() === CONFIG.start.day) {
-    setTimeout(() => burst(window.innerWidth / 2, window.innerHeight * 0.28, 40), 400);
+    setTimeout(() => explode(window.innerWidth / 2, window.innerHeight * 0.28, 70), 400);
   }
 })();
 </script>
