@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Seventh</title>
+<meta name="description" content="Counting down to the seventh of every month, since 7 October 2025.">
+<meta name="theme-color" content="#DDD7CB">
+
+<!-- so the link shows the bear when you send it to her -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Seventh">
+<meta property="og:description" content="Counting down to the seventh of every month.">
+<meta property="og:image" content="assets/rose.gif">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="assets/rose.gif">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap">
+
+<style>
+  :root {
+    --desk:    #DDD7CB;
+    --paper:   #FBF8F1;
+    --rule:    rgba(120,152,186,0.32);
+    --margin:  rgba(196,118,128,0.55);
+    --pen:     #23325C;
+    --pencil:  #85889A;
+    --rose:    #B8324E;
+    --tape:    rgba(233,226,196,0.62);
+
+    --hand: 'Caveat', 'Bradley Hand', 'Segoe Print', cursive;
+    --mono: 'Courier Prime', 'Courier New', Courier, monospace;
+
+    --lh: 30px;          /* the ruling pitch. the handwriting sits on it. */
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--desk);
+    color: var(--pen);
+    font-family: var(--hand);
+    font-size: 22px;
+    line-height: var(--lh);
+    -webkit-font-smoothing: antialiased;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    min-height: 100vh;
+    padding: clamp(24px, 6vw, 60px) 16px;
+  }
+
+  #petals { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+
+  /* ---------- the sheet ---------- */
+  .sheet {
+    position: relative;
+    z-index: 1;
+    width: min(580px, 100%);
+    background-color: var(--paper);
+    background-image: repeating-linear-gradient(to bottom,
+      transparent 0 calc(var(--lh) - 1px), var(--rule) calc(var(--lh) - 1px) var(--lh));
+    background-position: 0 14px;
+    padding: 52px clamp(20px, 5vw, 46px) 40px clamp(30px, 8vw, 76px);
+    transform: rotate(-0.4deg);
+    box-shadow: 0 1px 2px rgba(60,50,40,0.10), 0 14px 34px rgba(60,50,40,0.16);
+  }
+  /* the pink margin rule, the one thing every notebook has */
+  .sheet::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    left: clamp(18px, 5.5vw, 52px);
+    width: 1px;
+    background: var(--margin);
+  }
+
+  .tape {
+    position: absolute;
+    width: 92px; height: 26px;
+    background: var(--tape);
+    box-shadow: 0 1px 1px rgba(60,50,40,0.10);
+  }
+  .tape.tl { top: -12px; left: 22px; transform: rotate(-4deg); }
+  .tape.tr { top: -14px; right: 26px; transform: rotate(3.5deg); }
+
+  /* ---------- header ---------- */
+  header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 12px;
+  }
+
+  .since {
+    margin: 0 0 2px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: var(--lh);
+    color: var(--pencil);
+  }
+
+  h1 {
+    margin: 0;
+    font-weight: 600;
+    font-size: clamp(40px, 11vw, 58px);
+    line-height: var(--lh);
+    letter-spacing: -0.005em;
+    max-width: 11ch;
+  }
+  h1 .today { color: var(--rose); }
+
+  /* the bear, taped on crooked */
+  .taped {
+    position: relative;
+    margin: -6px -6px 0 0;
+    padding: 10px 10px 12px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(60,50,40,0.12), 0 8px 18px rgba(60,50,40,0.14);
+    transform: rotate(3deg);
+    border: none;
+    cursor: pointer;
+    display: block;
+  }
+  .taped::after {
+    content: "";
+    position: absolute;
+    top: -11px; left: 50%;
+    width: 62px; height: 22px;
+    margin-left: -31px;
+    background: var(--tape);
+    transform: rotate(-2deg);
+  }
+  .taped:focus-visible { outline: 2px solid var(--rose); outline-offset: 6px; }
+  .taped img {
+    display: block;
+    width: 132px; height: 132px;
+    transition: transform 240ms cubic-bezier(.34,1.56,.64,1);
+  }
+  .taped:hover img, .taped:active img { transform: rotate(-3deg) scale(1.03); }
+
+  /* ---------- the counter: a printed slip stuck to the page ---------- */
+  .slip {
+    position: relative;
+    display: inline-block;
+    margin: 30px 0 10px;
+    padding: 12px 20px 14px;
+    background: #FFFDF7;
+    border: 1px dashed rgba(35,50,92,0.35);
+    transform: rotate(-0.8deg);
+    box-shadow: 0 6px 14px rgba(60,50,40,0.10);
+  }
+  .slip .label {
+    margin: 0 0 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.2;
+    color: var(--pencil);
+  }
+  .clock {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    font-family: var(--mono);
+  }
+  .clock div { display: flex; align-items: baseline; gap: 4px; }
+  .clock b {
+    font-size: clamp(26px, 7vw, 34px);
+    font-weight: 700;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+  .clock span { font-size: 11px; color: var(--pencil); }
+
+  /* a scribble in the margin, the way you'd actually annotate a page */
+  .aside {
+    display: inline-block;
+    margin-left: 14px;
+    font-size: 19px;
+    color: var(--rose);
+    transform: rotate(-4deg);
+    white-space: nowrap;
+  }
+
+  .tally {
+    margin: 6px 0 0;
+    font-size: 23px;
+    line-height: var(--lh);
+  }
+  .tally b { font-weight: 700; }
+
+  footer {
+    margin-top: calc(var(--lh) * 0.9);
+    font-size: 21px;
+    color: var(--pencil);
+    transform: rotate(-1deg);
+    display: inline-block;
+  }
+
+  @media (max-width: 460px) {
+    header { grid-template-columns: 1fr; }
+    .taped { justify-self: start; margin: 10px 0 0; }
+    .taped img { width: 108px; height: 108px; }
+    .aside { display: block; margin: 8px 0 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+
+<body>
+<canvas id="petals" aria-hidden="true"></canvas>
+
+<div class="sheet">
+  <span class="tape tl" aria-hidden="true"></span>
+  <span class="tape tr" aria-hidden="true"></span>
+
+  <header>
+    <div>
+      <p class="since" id="since">since 7 october 2025</p>
+      <h1 id="headline">counting</h1>
+    </div>
+    <button class="taped" id="roseBtn" aria-label="Scatter some petals">
+      <img id="rose" src="assets/rose.gif" alt="A little bear holding a rose" width="132" height="132">
+    </button>
+  </header>
+
+  <div class="slip">
+    <p class="label" id="untilLabel">next one in</p>
+    <div class="clock">
+      <div><b id="d">--</b><span>days</span></div>
+      <div><b id="h">--</b><span>hrs</span></div>
+      <div><b id="m">--</b><span>min</span></div>
+      <div><b id="s">--</b><span>sec</span></div>
+    </div>
+  </div>
+  <span class="aside">yes, i'm counting</span>
+
+  <p class="tally" id="tally">&nbsp;</p>
+
+  <footer>ok that's it. see you on the 7th</footer>
+</div>
+
+<script>
+/* the only thing you should need to change */
+const CONFIG = {
+  start: { year: 2025, month: 10, day: 7 }   // month is 1-12
+};
+
+const WORDS = ["zero","one","two","three","four","five","six","seven","eight","nine","ten",
+  "eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty",
+  "twenty-one","twenty-two","twenty-three","twenty-four"];
+
+const MONTHS = ["january","february","march","april","may","june",
+  "july","august","september","october","november","december"];
+
+const START = new Date(CONFIG.start.year, CONFIG.start.month - 1, CONFIG.start.day);
+const DAY_MS = 86400000;
+
+const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const daysBetween = (a, b) => Math.round((midnight(b) - midnight(a)) / DAY_MS);
+const longDate = d => d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear();
+const pad = n => String(n).padStart(2, "0");
+
+/* whole months elapsed, plus the leftover days */
+function elapsed(to) {
+  let months = (to.getFullYear() - START.getFullYear()) * 12 + (to.getMonth() - START.getMonth());
+  let anchor = new Date(START.getFullYear(), START.getMonth() + months, START.getDate());
+  if (anchor > midnight(to)) {
+    months -= 1;
+    anchor = new Date(START.getFullYear(), START.getMonth() + months, START.getDate());
+  }
+  return { months, days: daysBetween(anchor, to) };
+}
+
+/* the next seventh, at midnight. today's own seventh doesn't count. */
+function nextAnniversary(now) {
+  const d = CONFIG.start.day;
+  let target = new Date(now.getFullYear(), now.getMonth(), d);
+  if (midnight(now) >= target) target = new Date(now.getFullYear(), now.getMonth() + 1, d);
+  return target;
+}
+
+document.getElementById("since").textContent = "since " + longDate(START);
+
+const el = { d: document.getElementById("d"), h: document.getElementById("h"),
+             m: document.getElementById("m"), s: document.getElementById("s") };
+
+function tick() {
+  const now = new Date();
+  const left = Math.max(0, nextAnniversary(now) - now);
+
+  el.d.textContent = Math.floor(left / DAY_MS);
+  el.h.textContent = pad(Math.floor(left / 3600000) % 24);
+  el.m.textContent = pad(Math.floor(left / 60000) % 60);
+  el.s.textContent = pad(Math.floor(left / 1000) % 60);
+
+  const e = elapsed(now);
+  const isToday = now.getDate() === CONFIG.start.day;
+  const word = WORDS[e.months] || e.months;
+
+  document.getElementById("headline").innerHTML = e.months < 1
+    ? "our first month"
+    : (isToday ? word + ' months <span class="today">today</span>'
+               : word + " months of you");
+
+  document.getElementById("untilLabel").textContent = isToday ? "it's today. next one in" : "next one in";
+
+  document.getElementById("tally").innerHTML =
+    "<b>" + daysBetween(START, now) + "</b> days so far &mdash; " +
+    e.months + " months and " + e.days + " days, if we're being picky.";
+}
+tick();
+setInterval(tick, 1000);
+
+/* petals off the rose */
+(function () {
+  const canvas = document.getElementById("petals");
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    canvas.style.display = "none";
+    return;
+  }
+
+  const ctx = canvas.getContext("2d");
+  const BASE = 14;
+  let w, h, petals = [];
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  const TINTS = ["rgba(184,50,78,", "rgba(206,104,124,", "rgba(226,168,178,"];
+
+  function petal(fromTop) {
+    return {
+      x: Math.random() * w,
+      y: fromTop ? -20 : Math.random() * h,
+      r: 3.5 + Math.random() * 4,
+      vy: 0.20 + Math.random() * 0.38,
+      drift: 0.4 + Math.random() * 0.9,
+      phase: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.02,
+      angle: Math.random() * Math.PI,
+      alpha: 0.24 + Math.random() * 0.34,
+      tint: TINTS[(Math.random() * TINTS.length) | 0]
+    };
+  }
+
+  function burst(cx, cy, n) {
+    for (let i = 0; i < n; i++) {
+      const p = petal(false);
+      p.x = cx + (Math.random() - 0.5) * 36;
+      p.y = cy + (Math.random() - 0.5) * 36;
+      p.vy = 0.5 + Math.random() * 1.1;
+      p.alpha = 0.5 + Math.random() * 0.35;
+      petals.push(p);
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    for (const p of petals) {
+      p.y += p.vy;
+      p.phase += 0.014;
+      p.angle += p.spin;
+      p.x += Math.sin(p.phase) * p.drift;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.fillStyle = p.tint + p.alpha + ")";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.r, p.r * 0.56, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    petals = petals.filter(p => p.y < h + 30);
+    while (petals.length < BASE) petals.push(petal(true));
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener("resize", resize);
+  for (let i = 0; i < BASE; i++) petals.push(petal(false));
+  requestAnimationFrame(draw);
+
+  document.getElementById("roseBtn").addEventListener("click", e => {
+    const b = e.currentTarget.getBoundingClientRect();
+    burst(b.left + b.width / 2, b.top + b.height / 2, 24);
+  });
+
+  if (new Date().getDate() === CONFIG.start.day) {
+    setTimeout(() => burst(window.innerWidth / 2, window.innerHeight * 0.28, 36), 400);
+  }
+})();
+</script>
+</body>
+</html>
