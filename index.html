@@ -315,75 +315,113 @@ setInterval(tick, 1000);
   }
 
   const ctx = canvas.getContext("2d");
-  const BASE = 22;
-  let w, h, hearts = [];
-
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    w = canvas.clientWidth; h = canvas.clientHeight;
-    canvas.width = w * dpr; canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
+  const LANES = 24;                 /* one falling heart per lane, so the spread stays even */
+  let w = 0, h = 0, rain = [], burstHearts = [];
 
   const TINTS = ["rgba(168,38,66,", "rgba(198,72,102,", "rgba(226,116,142,"];
 
-  /* two mirrored beziers: notch at the top, point at the bottom */
-  function heartPath(s) {
+  /* The classic heart curve: x = 16sin³t, y = 13cos t - 5cos2t - 2cos3t - cos4t.
+     It spans 32 wide by 29 tall, so the proportions are right by construction.
+     Sampled once and normalised to a unit width. */
+  const OUTLINE = (function () {
+    const pts = [];
+    for (let i = 0; i <= 80; i++) {
+      const t = (i / 80) * Math.PI * 2, sin = Math.sin(t);
+      const x = 16 * sin * sin * sin;
+      const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+      pts.push([x / 32, (y - 2.5) / 32]);   /* -2.5 centres it vertically */
+    }
+    return pts;
+  })();
+
+  function heartPath(width) {
     ctx.beginPath();
-    ctx.moveTo(0, -s * 0.25);
-    ctx.bezierCurveTo(-s * 0.50, -s * 0.95, -s * 1.15, s * 0.15, 0, s * 0.80);
-    ctx.bezierCurveTo( s * 1.15,  s * 0.15,  s * 0.50, -s * 0.95, 0, -s * 0.25);
+    for (let i = 0; i < OUTLINE.length; i++) {
+      const x = OUTLINE[i][0] * width, y = OUTLINE[i][1] * width;
+      if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
     ctx.closePath();
   }
 
-  function heart(fromTop) {
-    return {
-      x: Math.random() * w,
-      y: fromTop ? -24 : Math.random() * h,
-      s: 6 + Math.random() * 6,
-      vy: 0.28 + Math.random() * 0.5,
-      drift: 0.4 + Math.random() * 0.9,
-      phase: Math.random() * Math.PI * 2,
-      sway: 0.18 + Math.random() * 0.3,
-      alpha: 0.34 + Math.random() * 0.38,
-      tint: TINTS[(Math.random() * TINTS.length) | 0]
-    };
+  /* a random point inside the lane, never straddling its neighbours */
+  function laneX(lane) {
+    const band = w / LANES;
+    return (lane + 0.15 + Math.random() * 0.7) * band;
+  }
+
+  function reset(p, lane, y) {
+    p.lane  = lane;
+    p.x     = laneX(lane);
+    p.y     = y;
+    p.size  = 12 + Math.random() * 9;
+    p.vy    = 0.30 + Math.random() * 0.45;
+    p.drift = 0.3 + Math.random() * 0.7;
+    p.phase = Math.random() * Math.PI * 2;
+    p.sway  = 0.12 + Math.random() * 0.20;
+    p.alpha = 0.34 + Math.random() * 0.36;
+    p.tint  = TINTS[(Math.random() * TINTS.length) | 0];
+    return p;
+  }
+
+  function seed() {
+    /* stagger the starting heights, shuffled so the lanes don't form a diagonal */
+    const ys = [];
+    for (let i = 0; i < LANES; i++) ys.push((i + Math.random()) / LANES * h);
+    for (let i = ys.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      [ys[i], ys[j]] = [ys[j], ys[i]];
+    }
+    rain = [];
+    for (let i = 0; i < LANES; i++) rain.push(reset({}, i, ys[i]));
+  }
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const prev = w;
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!rain.length) seed();
+    else if (prev) for (const p of rain) p.x *= w / prev;   /* keep the spread on resize */
   }
 
   function burst(cx, cy, n) {
     for (let i = 0; i < n; i++) {
-      const p = heart(false);
-      p.x = cx + (Math.random() - 0.5) * 40;
-      p.y = cy + (Math.random() - 0.5) * 40;
+      const p = reset({}, 0, cy + (Math.random() - 0.5) * 40);
+      p.x = cx + (Math.random() - 0.5) * 44;
       p.vy = 0.6 + Math.random() * 1.2;
-      p.alpha = 0.6 + Math.random() * 0.35;
-      hearts.push(p);
+      p.alpha = 0.6 + Math.random() * 0.34;
+      burstHearts.push(p);
     }
+  }
+
+  function move(p) {
+    p.y += p.vy;
+    p.phase += 0.016;
+    p.x += Math.sin(p.phase) * p.drift;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(Math.sin(p.phase) * p.sway);   /* a gentle tilt, never a tumble */
+    ctx.fillStyle = p.tint + p.alpha + ")";
+    heartPath(p.size);
+    ctx.fill();
+    ctx.restore();
   }
 
   function draw() {
     ctx.clearRect(0, 0, w, h);
-    for (const p of hearts) {
-      p.y += p.vy;
-      p.phase += 0.016;
-      p.x += Math.sin(p.phase) * p.drift;
-
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(Math.sin(p.phase) * p.sway);   /* a gentle tilt, not a tumble */
-      ctx.fillStyle = p.tint + p.alpha + ")";
-      heartPath(p.s);
-      ctx.fill();
-      ctx.restore();
+    for (const p of rain) {
+      move(p);
+      if (p.y - p.size > h) reset(p, p.lane, -p.size - Math.random() * 60);
     }
-    hearts = hearts.filter(p => p.y < h + 30);
-    while (hearts.length < BASE) hearts.push(heart(true));
+    for (const p of burstHearts) move(p);
+    burstHearts = burstHearts.filter(p => p.y - p.size < h);
     requestAnimationFrame(draw);
   }
 
   resize();
   window.addEventListener("resize", resize);
-  for (let i = 0; i < BASE; i++) hearts.push(heart(false));
   requestAnimationFrame(draw);
 
   document.getElementById("roseBtn").addEventListener("click", e => {
