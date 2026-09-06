@@ -53,7 +53,7 @@
     padding: clamp(24px, 6vw, 60px) 16px;
   }
 
-  #petals { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+  #hearts { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 
   /* ---------- the sheet ---------- */
   .sheet {
@@ -214,7 +214,7 @@
 </head>
 
 <body>
-<canvas id="petals" aria-hidden="true"></canvas>
+<canvas id="hearts" aria-hidden="true"></canvas>
 
 <div class="sheet">
   <span class="tape tl" aria-hidden="true"></span>
@@ -225,7 +225,7 @@
       <p class="since" id="since">since 7 october 2025</p>
       <h1 id="headline">counting</h1>
     </div>
-    <button class="taped" id="roseBtn" aria-label="Scatter some petals">
+    <button class="taped" id="roseBtn" aria-label="Scatter some hearts">
       <img id="rose" src="assets/rose.gif" alt="A little bear holding a rose" width="132" height="132">
     </button>
   </header>
@@ -317,17 +317,17 @@ function tick() {
 tick();
 setInterval(tick, 1000);
 
-/* petals off the rose */
+/* hearts raining down */
 (function () {
-  const canvas = document.getElementById("petals");
+  const canvas = document.getElementById("hearts");
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     canvas.style.display = "none";
     return;
   }
 
   const ctx = canvas.getContext("2d");
-  const BASE = 14;
-  let w, h, petals = [];
+  const BASE = 22;
+  let w, h, hearts = [];
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -336,68 +336,74 @@ setInterval(tick, 1000);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  const TINTS = ["rgba(184,50,78,", "rgba(206,104,124,", "rgba(226,168,178,"];
+  const TINTS = ["rgba(184,50,78,", "rgba(214,86,112,", "rgba(238,150,170,"];
 
-  function petal(fromTop) {
+  /* two mirrored beziers: notch at the top, point at the bottom */
+  function heartPath(s) {
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 0.25);
+    ctx.bezierCurveTo(-s * 0.50, -s * 0.95, -s * 1.15, s * 0.15, 0, s * 0.80);
+    ctx.bezierCurveTo( s * 1.15,  s * 0.15,  s * 0.50, -s * 0.95, 0, -s * 0.25);
+    ctx.closePath();
+  }
+
+  function heart(fromTop) {
     return {
       x: Math.random() * w,
-      y: fromTop ? -20 : Math.random() * h,
-      r: 3.5 + Math.random() * 4,
-      vy: 0.20 + Math.random() * 0.38,
+      y: fromTop ? -24 : Math.random() * h,
+      s: 6 + Math.random() * 6,
+      vy: 0.28 + Math.random() * 0.5,
       drift: 0.4 + Math.random() * 0.9,
       phase: Math.random() * Math.PI * 2,
-      spin: (Math.random() - 0.5) * 0.02,
-      angle: Math.random() * Math.PI,
-      alpha: 0.24 + Math.random() * 0.34,
+      sway: 0.18 + Math.random() * 0.3,
+      alpha: 0.34 + Math.random() * 0.38,
       tint: TINTS[(Math.random() * TINTS.length) | 0]
     };
   }
 
   function burst(cx, cy, n) {
     for (let i = 0; i < n; i++) {
-      const p = petal(false);
-      p.x = cx + (Math.random() - 0.5) * 36;
-      p.y = cy + (Math.random() - 0.5) * 36;
-      p.vy = 0.5 + Math.random() * 1.1;
-      p.alpha = 0.5 + Math.random() * 0.35;
-      petals.push(p);
+      const p = heart(false);
+      p.x = cx + (Math.random() - 0.5) * 40;
+      p.y = cy + (Math.random() - 0.5) * 40;
+      p.vy = 0.6 + Math.random() * 1.2;
+      p.alpha = 0.6 + Math.random() * 0.35;
+      hearts.push(p);
     }
   }
 
   function draw() {
     ctx.clearRect(0, 0, w, h);
-    for (const p of petals) {
+    for (const p of hearts) {
       p.y += p.vy;
-      p.phase += 0.014;
-      p.angle += p.spin;
+      p.phase += 0.016;
       p.x += Math.sin(p.phase) * p.drift;
 
       ctx.save();
       ctx.translate(p.x, p.y);
-      ctx.rotate(p.angle);
+      ctx.rotate(Math.sin(p.phase) * p.sway);   /* a gentle tilt, not a tumble */
       ctx.fillStyle = p.tint + p.alpha + ")";
-      ctx.beginPath();
-      ctx.ellipse(0, 0, p.r, p.r * 0.56, 0, 0, Math.PI * 2);
+      heartPath(p.s);
       ctx.fill();
       ctx.restore();
     }
-    petals = petals.filter(p => p.y < h + 30);
-    while (petals.length < BASE) petals.push(petal(true));
+    hearts = hearts.filter(p => p.y < h + 30);
+    while (hearts.length < BASE) hearts.push(heart(true));
     requestAnimationFrame(draw);
   }
 
   resize();
   window.addEventListener("resize", resize);
-  for (let i = 0; i < BASE; i++) petals.push(petal(false));
+  for (let i = 0; i < BASE; i++) hearts.push(heart(false));
   requestAnimationFrame(draw);
 
   document.getElementById("roseBtn").addEventListener("click", e => {
     const b = e.currentTarget.getBoundingClientRect();
-    burst(b.left + b.width / 2, b.top + b.height / 2, 24);
+    burst(b.left + b.width / 2, b.top + b.height / 2, 26);
   });
 
   if (new Date().getDate() === CONFIG.start.day) {
-    setTimeout(() => burst(window.innerWidth / 2, window.innerHeight * 0.28, 36), 400);
+    setTimeout(() => burst(window.innerWidth / 2, window.innerHeight * 0.28, 40), 400);
   }
 })();
 </script>
