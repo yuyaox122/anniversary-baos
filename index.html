@@ -106,7 +106,6 @@
     margin: 2px -4px 0 0;
     padding: 10px 10px 12px;
     background: #fff;
-    box-shadow: 0 1px 2px rgba(90,40,55,0.12), 0 8px 18px rgba(120,50,70,0.14);
     transform: rotate(3deg);
     border: none;
     cursor: pointer;
@@ -283,7 +282,7 @@
   <p class="tally" id="tally">&nbsp;</p>
 
   <section class="dates">
-    <h2>future dates</h2>
+    <h2>future dates hehe</h2>
     <ul>
       <li>shopping for dresses (and tech)</li>
       <li>bump cars</li>
@@ -362,7 +361,7 @@ function tick() {
   document.getElementById("headline").innerHTML = e.months < 1
     ? "our first month"
     : (isToday ? word + ' months <span class="today">today</span>'
-               : word + " months lou");
+               : word + " months");
 
   document.getElementById("untilLabel").textContent = isToday ? "it's today. next one in" : "next one in";
 
@@ -415,20 +414,31 @@ setInterval(tick, 1000);
   /* a random point inside the lane, never straddling its neighbours */
   function laneX(lane) {
     const band = w / LANES;
-    return (lane + 0.15 + Math.random() * 0.7) * band;
+    return (lane + Math.random() * 1.7 - 0.35) * band;
   }
 
   function reset(p, lane, y) {
     p.lane  = lane;
     p.x     = laneX(lane);
     p.y     = y;
-    p.size  = 10 + Math.random() * 9;
-    p.vy    = 0.30 + Math.random() * 0.45;
-    p.drift = 0.3 + Math.random() * 0.7;
-    p.phase = Math.random() * Math.PI * 2;
-    p.sway  = 0.12 + Math.random() * 0.20;
-    p.alpha = 0.34 + Math.random() * 0.36;
+    p.size  = 9 + Math.random() * 11;
+    p.vy    = 0.22 + Math.random() * 0.95;   /* a wide spread of fall speeds */
+    p.alpha = 0.30 + Math.random() * 0.42;
     p.tint  = TINTS[(Math.random() * TINTS.length) | 0];
+
+    /* Two drift oscillators running at unrelated speeds. Their sum has no
+       common period, so no two hearts ever trace the same path or turn together. */
+    p.ph1 = Math.random() * Math.PI * 2;
+    p.ph2 = Math.random() * Math.PI * 2;
+    p.f1  = 0.009 + Math.random() * 0.023;
+    p.f2  = 0.003 + Math.random() * 0.012;
+    p.a1  = 0.25 + Math.random() * 1.00;
+    p.a2  = 0.15 + Math.random() * 0.75;
+
+    /* the tilt runs on its own clock, unlinked from the drift, either direction */
+    p.rot    = Math.random() * Math.PI * 2;
+    p.rotSpd = (Math.random() < 0.5 ? -1 : 1) * (0.004 + Math.random() * 0.018);
+    p.rotAmp = 0.10 + Math.random() * 0.40;
     return p;
   }
 
@@ -485,9 +495,11 @@ setInterval(tick, 1000);
       p.spin += p.spinRate;
       p.alpha -= 0.0055;
     } else {
-      p.y += p.vy * (1 + storm * 3.4);
-      p.phase += 0.016 + storm * 0.05;
-      p.x += Math.sin(p.phase) * p.drift + catchWind;
+      p.ph1 += p.f1 + storm * 0.04;
+      p.ph2 += p.f2 + storm * 0.02;
+      p.rot += p.rotSpd * (1 + storm * 4);
+      p.y   += p.vy * (1 + storm * 3.4) * (1 + Math.sin(p.ph2) * 0.18);
+      p.x   += Math.sin(p.ph1) * p.a1 + Math.sin(p.ph2) * p.a2 + catchWind;
 
       /* blown off one side, back in on the other, so the sky never thins out */
       if (p.x < -30) p.x = w + 30;
@@ -496,7 +508,7 @@ setInterval(tick, 1000);
 
     ctx.save();
     ctx.translate(p.x, p.y);
-    ctx.rotate(p.exploding ? p.spin : Math.sin(p.phase) * p.sway + wind * 0.06);
+    ctx.rotate(p.exploding ? p.spin : Math.sin(p.rot) * p.rotAmp + wind * 0.06);
     ctx.fillStyle = p.tint + Math.max(p.alpha, 0) + ")";
     heartPath(p.size);
     ctx.fill();
