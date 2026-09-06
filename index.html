@@ -184,6 +184,51 @@
     line-height: 1.45;
   }
 
+  /* ---------- the list of dates still owed ---------- */
+  .dates {
+    margin-top: 34px;
+    padding-top: 26px;
+    border-top: 1px solid rgba(184,50,78,0.16);
+  }
+  .dates h2 {
+    margin: 0 0 14px;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.16em;
+    line-height: 1.2;
+    color: var(--soft);
+  }
+  .dates ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .dates li {
+    display: grid;
+    grid-template-columns: 15px 1fr;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 21px;
+    line-height: 1.4;
+  }
+  .dates li::before {
+    content: "\2665";
+    font-size: 11px;
+    line-height: 1;
+    color: var(--rose);
+    opacity: 0.5;
+  }
+
+  .shower {
+    display: block;
+    width: 170px;
+    height: 170px;
+    margin: 34px auto 0;
+    border-radius: 4px;
+  }
+
   footer {
     display: block;
     margin-top: 32px;
@@ -237,7 +282,22 @@
 
   <p class="tally" id="tally">&nbsp;</p>
 
+  <section class="dates">
+    <h2>still to do</h2>
+    <ul>
+      <li>shopping for dresses (and tech)</li>
+      <li>bump cars</li>
+      <li>many many movies</li>
+      <li>arcade round 2</li>
+      <li>study in every cafe in coventry</li>
+      <li>kick ass in badminton</li>
+    </ul>
+  </section>
+
   <footer>love you xiao bao</footer>
+
+  <img class="shower" src="assets/shower.gif" alt="The bear having a very happy shower"
+       width="170" height="170" loading="lazy" decoding="async">
 </div>
 
 <script>
